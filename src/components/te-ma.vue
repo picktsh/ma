@@ -8,14 +8,14 @@
         <n-input-number
           v-for="item in zodiac"
           :key="item"
+          v-model:value="state[item]"
           clearable
           placeholder="金额"
-          v-model:value="state[item]"
           :showButton="false"
+          :class="{ active: (state[item] || 0) > 0 }"
+          :input-props="{ inputmode: 'decimal' }"
           @update:value="(v) => handleInput(String(item), v)">
-          <template #prefix>
-            {{ item }}
-          </template>
+          <template #prefix>{{ item }}:</template>
         </n-input-number>
       </div>
       <div class="flex-2 grid grid-cols-2 gap-1">
@@ -25,18 +25,46 @@
           v-model:value="state[item]"
           clearable
           placeholder="金额"
-          :showButton="false">
-          <template #prefix>
-            {{ item }}
-          </template>
+          :showButton="false"
+          :class="{ active: (state[item] || 0) > 0 }"
+          :input-props="{ inputmode: 'decimal' }">
+          <template #prefix>{{ item }}:</template>
         </n-input-number>
       </div>
     </div>
+    <!--TODO排列顺序是反过来的-->
+    <!--    <div class="grid grid-flow-col grid-rows-12">-->
+    <!--      <n-input-number-->
+    <!--        v-for="item in zodiac"-->
+    <!--        :key="item"-->
+    <!--        v-model:value="state[item]"-->
+    <!--        clearable-->
+    <!--        placeholder="金额"-->
+    <!--        :showButton="false"-->
+    <!--        :class="{ active: (state[item] || 0) > 0 }"-->
+    <!--        :input-props="{ inputmode: 'decimal' }"-->
+    <!--        @update:value="(v) => handleInput(String(item), v)">-->
+    <!--        <template #prefix>{{ item }}:</template>-->
+    <!--      </n-input-number>-->
+    <!--      <div v-for="item in offset - 1" :key="item" />-->
+    <!--      <n-input-number-->
+    <!--        v-for="item in 49"-->
+    <!--        :key="item"-->
+    <!--        v-model:value="state[item]"-->
+    <!--        clearable-->
+    <!--        placeholder="金额"-->
+    <!--        :showButton="false"-->
+    <!--        :class="{ active: (state[item] || 0) > 0 }"-->
+    <!--        :input-props="{ inputmode: 'decimal' }">-->
+    <!--        <template #prefix>{{ item }}:</template>-->
+    <!--      </n-input-number>-->
+    <!--    </div>-->
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, toRaw } from 'vue'
+import { omit } from 'lodash-es'
 import { NInputNumber } from 'naive-ui'
 
 const year = new Date().getFullYear()
@@ -48,7 +76,8 @@ const stateAge = reactive<Record<string, number[]>>({
 })
 
 const total = computed(() => {
-  return Object.values(state).reduce((a, b) => (a || 0) + (b || 0), 0)
+  const obj = omit<Record<string, number | null>>(state, zodiac)
+  return Object.values(obj).reduce((a, b) => (a || 0) + (b || 0), 0) || 0
 })
 
 const fmtNumber = (value: number | null) => {
@@ -57,7 +86,6 @@ const fmtNumber = (value: number | null) => {
 
 const handleInput = (key: string, value: number | null) => {
   if (key in stateAge) {
-    console.log(key, stateAge[key])
     stateAge[key].forEach((i) => (state[i] = value))
   } else {
     state[key] = value
@@ -83,14 +111,29 @@ onMounted(() => {
 .flex-2 {
   flex: 2;
 }
+.flex-3 {
+  flex: 3;
+}
 .flex-col {
   flex-direction: column;
 }
 .grid {
   display: grid;
 }
+.grid-flow-row {
+  grid-auto-flow: row;
+}
+.grid-flow-col {
+  grid-auto-flow: column;
+}
 .grid-cols-2 {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.grid-cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.grid-rows-12 {
+  grid-template-rows: repeat(12, minmax(0, 1fr));
 }
 .gap-1 {
   gap: 4px;
@@ -125,6 +168,18 @@ onMounted(() => {
     padding: 12px 0 24px;
     text-align: center;
     color: var(--vt-c-divider-dark-1);
+  }
+}
+.n-input-number {
+  .n-input {
+    --n-padding-left: 4px;
+    --n-padding-right: 4px;
+  }
+  &.active {
+    .n-input {
+      --n-color: rgba(24, 160, 88, 0.32);
+      --n-color-focus: rgba(24, 160, 88, 0.32);
+    }
   }
 }
 </style>
