@@ -11,6 +11,7 @@
           v-model:value="state[item]"
           clearable
           placeholder="金额"
+          size="small"
           :showButton="false"
           :class="{ active: (state[item] || 0) > 0 }"
           :input-props="{ inputmode: 'decimal' }"
@@ -18,13 +19,14 @@
           <template #prefix>{{ item }}:</template>
         </n-input-number>
       </div>
-      <div class="flex-2 grid grid-cols-2 gap-1">
+      <div class="flex-3 grid grid-cols-3 gap-1">
         <n-input-number
           v-for="item in 49"
           :key="item"
           v-model:value="state[item]"
           clearable
           placeholder="金额"
+          size="small"
           :showButton="false"
           :class="{ active: (state[item] || 0) > 0 }"
           :input-props="{ inputmode: 'decimal' }">
