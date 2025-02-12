@@ -44,7 +44,7 @@
                 @click="() => [handleInput(item, amount), popoverRef[index].setShow(false)]">
                 {{ amount }}
               </n-button>
-              <n-button size="small" @click="popoverRef[index].setShow(false)">关闭</n-button>
+              <n-button size="small" secondary @click="popoverRef[index].setShow(false)">关闭</n-button>
             </div>
           </n-popover>
         </div>
