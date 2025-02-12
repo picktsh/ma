@@ -122,7 +122,6 @@ const handleCopy = () => {
     .map(([k, v]) => `${k.padEnd(2, '\u00A0')}: ${fmtNumber(v)} 元`)
     .join('\n')
   if (text) {
-    console.log(text)
     text += `\n总金额: ${fmtNumber(total.value)} 元`
     copy(text)
   }
