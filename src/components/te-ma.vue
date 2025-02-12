@@ -14,6 +14,7 @@
           </template>
           <div class="whitespace-pre">{{ text }}</div>
         </n-popover>
+        <!--<n-button type="primary" secondary>保存记录</n-button>-->
       </n-button-group>
     </div>
     <div class="flex-[1] grid grid-cols-4 gap-1">
