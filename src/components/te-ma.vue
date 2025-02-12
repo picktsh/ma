@@ -5,11 +5,11 @@
     </n-tabs>
     <div class="pb-2">
       <n-button-group size="small">
-        <n-button type="warning" @click="handleClear()">清空</n-button>
-        <n-popover v-if="isSupported" :show="copied" placement="bottom" trigger="manual">
+        <n-button type="warning" secondary @click="handleClear()">清空全部</n-button>
+        <n-popover :show="copied" placement="bottom" trigger="manual">
           <template #trigger>
-            <n-button type="primary" :disabled="!total" @click="handleCopy()">
-              {{ copied ? '复制成功' : '复制' }}
+            <n-button type="primary" secondary :disabled="!isSupported && !total" @click="handleCopy()">
+              {{ copied ? '复制成功' : '复制' }}{{ isSupported ? '' : '(未授权)' }}
             </n-button>
           </template>
           <div class="whitespace-pre">{{ text }}</div>
@@ -18,19 +18,36 @@
     </div>
     <div class="flex-[1] grid grid-cols-4 gap-1">
       <TransitionGroup name="list" appear>
-        <n-input-number
-          v-for="item in inputList"
-          :key="item"
-          :value="state[item]"
-          :class="{ active: (state[item] || 0) > 0 }"
-          :input-props="{ inputmode: 'decimal' }"
-          :showButton="false"
-          clearable
-          placeholder="金额"
-          size="small"
-          @update:value="(v) => handleInput(item, v)">
-          <template #prefix>{{ item }}:</template>
-        </n-input-number>
+        <div v-for="(item, index) in inputList" :key="item">
+          <n-popover ref="popoverRef" placement="top-start" style="--n-padding: 8px">
+            <template #trigger>
+              <n-input-number
+                :value="state[item]"
+                :class="{ active: (state[item] || 0) > 0 }"
+                :input-props="{ inputmode: 'decimal' }"
+                :showButton="false"
+                clearable
+                placeholder="金额"
+                size="small"
+                @update:value="(v) => handleInput(item, v)"
+                @focus="handleQuickAmount()">
+                <template #prefix>{{ item }}:</template>
+              </n-input-number>
+            </template>
+            <div class="grid grid-cols-4 gap-1">
+              <n-button
+                v-for="(amount, j) in quickAmount"
+                :key="amount"
+                :type="j > 11 ? 'warning' : undefined"
+                secondary
+                size="small"
+                @click="() => [handleInput(item, amount), popoverRef[index].setShow(false)]">
+                {{ amount }}
+              </n-button>
+              <n-button size="small" @click="popoverRef[index].setShow(false)">关闭</n-button>
+            </div>
+          </n-popover>
+        </div>
       </TransitionGroup>
     </div>
     <div class="sticky bottom-0 z-10 pt-3 bg-white">
@@ -40,11 +57,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
-import { omit } from 'lodash-es'
+import { computed, onMounted, ref } from 'vue'
+import { filter, omit, sortBy, uniq, values } from 'lodash-es'
 import { useClipboard, useLocalStorage } from '@vueuse/core'
 import { NButton, NButtonGroup, NInputNumber, NPopover, NTabPane, NTabs } from 'naive-ui'
 
+const { text, copy, copied, isSupported } = useClipboard()
 const year = new Date().getFullYear()
 const offset = (year % 12) - 3
 const zodiac = ['鼠', '牛', '虎', '兔', '龙', '蛇', '马', '羊', '猴', '鸡', '狗', '猪']
@@ -56,7 +74,9 @@ const layoutOptions = [
 const zodiacAge = <Record<string, number[]>>{} /* [zodiac[0]]: [6, 18, 30, 42], */
 const state = useLocalStorage('state', <Record<string, number | null>>{})
 const layout = useLocalStorage('layout', layoutOptions[0].id)
-const { text, copy, copied, isSupported } = useClipboard()
+const quickAmountInit = [5, 10, 20, 30, 50, 100, 200, 300, 400, 500, 1000, 10000]
+const quickAmount = useLocalStorage('quickAmount', quickAmountInit)
+const popoverRef = ref()
 const inputList = computed(() => {
   const numArr = Array.from({ length: 49 }, (_, i) => String(i + 1))
   switch (layout.value) {
@@ -73,6 +93,11 @@ const total = computed(() => {
   const obj = omit<Record<string, number | null>>(state.value, zodiac)
   return Object.values(obj).reduce((a, b) => (a || 0) + (b || 0), 0) || 0
 })
+
+const handleQuickAmount = () => {
+  const sufQa = <number[]>filter(uniq(sortBy(values(state.value))), (i) => !!i && !quickAmountInit.includes(i))
+  quickAmount.value = quickAmountInit.concat(sufQa.slice(0, 7))
+}
 
 const fmtNumber = (value: number | null | undefined) => {
   return Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 }).format(value || 0)
@@ -114,6 +139,8 @@ onMounted(() => {
 
 <style lang="scss">
 .container {
+  max-width: 768px;
+  margin: 0 auto;
   padding: 12px 12px 0;
   &:after {
     content: '到底了...';
