@@ -131,7 +131,7 @@ const handleCopy = () => {
 onMounted(() => {
   zodiac.forEach((item, index) => {
     const n = offset - index
-    zodiacAge[item] = [n - 12, n, n + 12, n + 24, n + 36, n + 48].filter((i) => i >= -5 && i <= 49)
+    zodiacAge[item] = [n - 12, n, n + 12, n + 24, n + 36, n + 48].filter((i) => i >= 1 && i <= 49)
   })
   console.table(zodiacAge)
 })
