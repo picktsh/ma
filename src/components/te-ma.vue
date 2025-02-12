@@ -1,169 +1,120 @@
 <template>
-  <div class="sticky top-0 z-10 p-3" style="background: white">
-    <div>总金额: {{ fmtNumber(total) }} 元</div>
-  </div>
   <div class="container">
-    <div class="flex gap-2">
-      <div class="flex-1 flex flex-col gap-1">
+    <n-tabs v-model:value="layout" type="segment" size="small">
+      <n-tab-pane v-for="item in layoutOptions" :key="item.id" :name="item.id" :tab="item.name" />
+    </n-tabs>
+    <div class="pb-2">
+      <n-button-group size="small">
+        <n-button type="warning" @click="handleClear()">清空</n-button>
+        <n-popover v-if="isSupported" :show="copied" placement="bottom" trigger="manual">
+          <template #trigger>
+            <n-button type="primary" :disabled="!total" @click="handleCopy()">
+              {{ copied ? '复制成功' : '复制' }}
+            </n-button>
+          </template>
+          <div class="whitespace-pre">{{ text }}</div>
+        </n-popover>
+      </n-button-group>
+    </div>
+    <div class="flex-[1] grid grid-cols-4 gap-1">
+      <TransitionGroup name="list" appear>
         <n-input-number
-          v-for="item in zodiac"
+          v-for="item in inputList"
           :key="item"
-          v-model:value="state[item]"
-          clearable
-          placeholder="金额"
-          size="small"
-          :showButton="false"
+          :value="state[item]"
           :class="{ active: (state[item] || 0) > 0 }"
           :input-props="{ inputmode: 'decimal' }"
-          @update:value="(v) => handleInput(String(item), v)">
-          <template #prefix>{{ item }}:</template>
-        </n-input-number>
-      </div>
-      <div class="flex-3 grid grid-cols-3 gap-1">
-        <n-input-number
-          v-for="item in 49"
-          :key="item"
-          v-model:value="state[item]"
+          :showButton="false"
           clearable
           placeholder="金额"
           size="small"
-          :showButton="false"
-          :class="{ active: (state[item] || 0) > 0 }"
-          :input-props="{ inputmode: 'decimal' }">
+          @update:value="(v) => handleInput(item, v)">
           <template #prefix>{{ item }}:</template>
         </n-input-number>
-      </div>
+      </TransitionGroup>
     </div>
-    <!--TODO排列顺序是反过来的-->
-    <!--    <div class="grid grid-flow-col grid-rows-12">-->
-    <!--      <n-input-number-->
-    <!--        v-for="item in zodiac"-->
-    <!--        :key="item"-->
-    <!--        v-model:value="state[item]"-->
-    <!--        clearable-->
-    <!--        placeholder="金额"-->
-    <!--        :showButton="false"-->
-    <!--        :class="{ active: (state[item] || 0) > 0 }"-->
-    <!--        :input-props="{ inputmode: 'decimal' }"-->
-    <!--        @update:value="(v) => handleInput(String(item), v)">-->
-    <!--        <template #prefix>{{ item }}:</template>-->
-    <!--      </n-input-number>-->
-    <!--      <div v-for="item in offset - 1" :key="item" />-->
-    <!--      <n-input-number-->
-    <!--        v-for="item in 49"-->
-    <!--        :key="item"-->
-    <!--        v-model:value="state[item]"-->
-    <!--        clearable-->
-    <!--        placeholder="金额"-->
-    <!--        :showButton="false"-->
-    <!--        :class="{ active: (state[item] || 0) > 0 }"-->
-    <!--        :input-props="{ inputmode: 'decimal' }">-->
-    <!--        <template #prefix>{{ item }}:</template>-->
-    <!--      </n-input-number>-->
-    <!--    </div>-->
+    <div class="sticky bottom-0 z-10 pt-3 bg-white">
+      <div>总金额: {{ fmtNumber(total) }} 元</div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, toRaw } from 'vue'
+import { computed, onMounted } from 'vue'
 import { omit } from 'lodash-es'
-import { NInputNumber } from 'naive-ui'
+import { useClipboard, useLocalStorage } from '@vueuse/core'
+import { NButton, NButtonGroup, NInputNumber, NPopover, NTabPane, NTabs } from 'naive-ui'
 
 const year = new Date().getFullYear()
 const offset = (year % 12) - 3
 const zodiac = ['鼠', '牛', '虎', '兔', '龙', '蛇', '马', '羊', '猴', '鸡', '狗', '猪']
-const state = reactive<Record<string, number | null>>({})
-const stateAge = reactive<Record<string, number[]>>({
-  /* [zodiac[0]]: [6, 18, 30, 42], */
+const layoutOptions = [
+  { id: 'zodiac', name: '生肖' },
+  { id: 'number', name: '数字' },
+  { id: 'mixed', name: '混合' },
+]
+const zodiacAge = <Record<string, number[]>>{} /* [zodiac[0]]: [6, 18, 30, 42], */
+const state = useLocalStorage('state', <Record<string, number | null>>{})
+const layout = useLocalStorage('layout', layoutOptions[0].id)
+const { text, copy, copied, isSupported } = useClipboard()
+const inputList = computed(() => {
+  const numArr = Array.from({ length: 49 }, (_, i) => String(i + 1))
+  switch (layout.value) {
+    case 'zodiac':
+      return zodiac
+    case 'number':
+      return numArr
+    case 'mixed':
+    default:
+      return [...zodiac, ...numArr]
+  }
 })
-
 const total = computed(() => {
-  const obj = omit<Record<string, number | null>>(state, zodiac)
+  const obj = omit<Record<string, number | null>>(state.value, zodiac)
   return Object.values(obj).reduce((a, b) => (a || 0) + (b || 0), 0) || 0
 })
 
-const fmtNumber = (value: number | null) => {
+const fmtNumber = (value: number | null | undefined) => {
   return Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 }).format(value || 0)
 }
 
 const handleInput = (key: string, value: number | null) => {
-  if (key in stateAge) {
-    stateAge[key].forEach((i) => (state[i] = value))
-  } else {
-    state[key] = value
+  state.value[key] = value
+  if (key in zodiacAge) {
+    zodiacAge[key].forEach((i) => (state.value[i] = value))
+  }
+}
+
+const handleClear = () => {
+  Object.keys(state.value).forEach((key) => {
+    state.value[key] = null
+  })
+}
+
+const handleCopy = () => {
+  let text = Object.entries(omit<Record<string, number | null>>(state.value, zodiac))
+    .filter(([, v]) => v)
+    .map(([k, v]) => `${k.padEnd(2, '\u00A0')}: ${fmtNumber(v)} 元`)
+    .join('\n')
+  if (text) {
+    console.log(text)
+    text += `\n总金额: ${fmtNumber(total.value)} 元`
+    copy(text)
   }
 }
 
 onMounted(() => {
   zodiac.forEach((item, index) => {
     const n = offset - index
-    stateAge[item] = [n - 12, n, n + 12, n + 24, n + 36, n + 48].filter((i) => i >= 1 && i <= 49)
+    zodiacAge[item] = [n - 12, n, n + 12, n + 24, n + 36, n + 48].filter((i) => i >= -5 && i <= 49)
   })
-  console.table(toRaw(stateAge))
+  console.table(zodiacAge)
 })
 </script>
 
 <style lang="scss">
-.flex {
-  display: flex;
-}
-.flex-1 {
-  flex: 1;
-}
-.flex-2 {
-  flex: 2;
-}
-.flex-3 {
-  flex: 3;
-}
-.flex-col {
-  flex-direction: column;
-}
-.grid {
-  display: grid;
-}
-.grid-flow-row {
-  grid-auto-flow: row;
-}
-.grid-flow-col {
-  grid-auto-flow: column;
-}
-.grid-cols-2 {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-.grid-cols-3 {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-.grid-rows-12 {
-  grid-template-rows: repeat(12, minmax(0, 1fr));
-}
-.gap-1 {
-  gap: 4px;
-}
-.gap-2 {
-  gap: 8px;
-}
-.gap-3 {
-  gap: 12px;
-}
-.p-3 {
-  padding: 12px;
-}
-.py-3 {
-  padding-top: 12px;
-  padding-bottom: 12px;
-}
-.sticky {
-  position: sticky;
-}
-.top-0 {
-  top: 0;
-}
-.z-10 {
-  z-index: 10;
-}
 .container {
-  padding: 0 12px;
+  padding: 12px 12px 0;
   &:after {
     content: '到底了...';
     display: block;
@@ -183,5 +134,18 @@ onMounted(() => {
       --n-color-focus: rgba(24, 160, 88, 0.32);
     }
   }
+}
+
+.list-move,
+.list-enter-active,
+.list-leave-active {
+  transition: all 0.5s ease;
+}
+.list-enter-from,
+.list-leave-to {
+  opacity: 0;
+}
+.list-leave-active {
+  position: absolute;
 }
 </style>
