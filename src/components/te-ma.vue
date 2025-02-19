@@ -3,7 +3,7 @@
     <n-tabs v-model:value="pageTab" type="segment" size="small">
       <n-tab-pane v-for="item in pageTabOptsInit()" :key="item.id" :name="item.id" :tab="item.name" />
     </n-tabs>
-    <div class="flex flex-wrap gap-1 pb-2">
+    <div class="flex flex-wrap gap-1 pb-1">
       <n-popover trigger="click">
         <template #trigger>
           <n-button secondary>教程</n-button>
@@ -20,7 +20,7 @@
       <n-button type="error" secondary @click="handleClearAll()">清空全部</n-button>
       <n-button class="flex-auto" secondary>关闭下拉</n-button>
     </div>
-    <div class="flex flex-col gap-1 pb-2">
+    <div class="flex flex-col gap-1 pb-1">
       <n-select
         :value="stateInput.amount"
         :input-props="{ inputmode: 'decimal' }"
@@ -56,7 +56,7 @@
         multiple
         placeholder="选择数字" />
     </div>
-    <div class="flex flex-wrap gap-1 pb-2">
+    <div class="flex flex-wrap gap-1 pb-1">
       <n-button type="warning" secondary @click="resetInput()">清空输入</n-button>
       <n-button type="info" secondary @click="calcAccumulate()">暂存结果</n-button>
       <div class="flex-auto" />
@@ -70,7 +70,7 @@
         <div class="whitespace-pre">{{ text }}</div>
       </n-popover>
     </div>
-    <div class="flex items-center flex-wrap gap-1 pb-2">
+    <div class="flex items-center flex-wrap gap-1 pb-1">
       <n-button
         v-for="(item, index) in resultRecord"
         :key="index"
