@@ -8,14 +8,17 @@
         <template #trigger>
           <n-button secondary>教程</n-button>
         </template>
-        <ol class="list-decimal ps-4">
-          <li>输入金额</li>
-          <li>选择生肖或数字</li>
-          <li>点击“暂存”</li>
-          <li>重复1~3步骤, 直到完成填完金额</li>
-          <li>点击“计算总和”</li>
-          <li>点击“复制结果”</li>
-        </ol>
+        <div>
+          单金额分批次计算模式
+          <ol class="list-decimal ps-4">
+            <li>输入金额</li>
+            <li>选择生肖或数字</li>
+            <li>点击“+暂存”</li>
+            <li>重复1~3步骤, 填完所有金额对应的生肖和数字</li>
+            <li>点击“=计算总和”</li>
+            <li>点击“复制结果”</li>
+          </ol>
+        </div>
       </n-popover>
       <n-button type="error" secondary @click="handleClearAll()">清空全部</n-button>
       <n-button class="flex-auto" secondary>关闭下拉</n-button>
@@ -30,7 +33,7 @@
         clearable
         filterable
         label-field="value"
-        placeholder="输入金额"
+        placeholder="第1步: 输入金额"
         show-on-focus
         tag
         @focus="handleQuickAmount()"
@@ -44,7 +47,7 @@
         clearable
         label-field="value"
         multiple
-        placeholder="选择生肖" />
+        placeholder="第2步: 选择生肖" />
       <n-select
         v-model:value="stateInput.numbers"
         :input-props="{ inputmode: 'decimal' }"
@@ -54,16 +57,15 @@
         :virtual-scroll="false"
         label-field="value"
         multiple
-        placeholder="选择数字" />
+        placeholder="第2步: 选择数字" />
     </div>
-    <div class="flex flex-wrap gap-1 pb-1">
+    <div class="flex items-center flex-wrap gap-1 pb-1">
       <n-button type="warning" secondary @click="resetInput()">清空输入</n-button>
-      <n-button type="info" secondary @click="calcAccumulate()">暂存结果</n-button>
+      <n-button type="success" secondary @click="calcAccumulate()">+暂存</n-button>
       <div class="flex-auto" />
-      <n-button type="info" secondary @click="calcSum()">计算总和</n-button>
       <n-popover :show="copied" placement="bottom" trigger="manual">
         <template #trigger>
-          <n-button type="primary" secondary :disabled="!isSupported && !total" @click="handleCopy()">
+          <n-button type="info" secondary :disabled="!isSupported && !total" @click="handleCopy()">
             {{ copied ? '复制成功' : '复制结果' }}{{ isSupported ? '' : '(未授权)' }}
           </n-button>
         </template>
@@ -71,14 +73,16 @@
       </n-popover>
     </div>
     <div class="flex items-center flex-wrap gap-1 pb-1">
+      结果集:
       <n-button
         v-for="(item, index) in resultRecord"
         :key="index"
         type="warning"
         secondary
         @click="handleViewResult(item.source)">
-        {{ fmtNumber(item.source.amount) }}元:{{ fmtNumber(item.sum) }} 元
+        {{ fmtNumber(item.source.amount) }}元:{{ fmtNumber(item.sum) }}元
       </n-button>
+      <n-button class="ml-auto" type="success" secondary @click="calcSum()">=计算总和</n-button>
     </div>
     <div class="flex-[1] grid grid-cols-4 gap-1">
       <TransitionGroup name="list" appear>
@@ -108,7 +112,7 @@
 import { computed, ref, watch } from 'vue'
 import { cloneDeep, difference, filter, flatten, omit, sortBy, uniq, values } from 'lodash-es'
 import { useClipboard, useLocalStorage, watchImmediate } from '@vueuse/core'
-import { NButton, NInputNumber, NPopover, NSelect, NTabPane, NTabs } from 'naive-ui'
+import { NButton, NInputNumber, NPopover, NSelect, NTabPane, NTabs, useMessage } from 'naive-ui'
 import {
   encodeData,
   numbers,
@@ -121,7 +125,8 @@ import {
   zodiacs,
 } from './data.ts'
 
-const { text, copy, copied, isSupported } = useClipboard()
+const { text, copy, copied, isSupported } = useClipboard({ copiedDuring: 3000 })
+const message = useMessage()
 const pageTab = useLocalStorage('pageTab', pageTabOptsInit()[0].id)
 const stateInput = useLocalStorage('stateInput', stateInputInit())
 const quickAmount = useLocalStorage('quickAmount', quickAmountInit())
@@ -176,11 +181,12 @@ const handleClearAll = () => {
 const handleCopy = () => {
   let text = Object.entries(omit<Record<string, number | null>>(viewResult.value, zodiacs))
     .filter(([, v]) => v)
-    .map(([k, v]) => `${k.padEnd(2, '\u00A0')}: ${fmtNumber(v)} 元`)
+    .map(([k, v]) => `[${k}]: ${fmtNumber(v)} 元`)
     .join('\n')
   if (text) {
     text += `\n合计金额: ${fmtNumber(total.value)} 元`
     copy(text)
+    message.success('复制成功')
   }
 }
 
