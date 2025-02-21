@@ -74,14 +74,16 @@
     </div>
     <div class="flex items-center flex-wrap gap-1 pb-1">
       结果集:
-      <n-button
-        v-for="(item, index) in resultRecord"
-        :key="index"
-        type="warning"
-        secondary
-        @click="handleViewResult(item.source)">
-        {{ fmtNumber(item.source.amount) }}元:{{ fmtNumber(item.sum) }}元
-      </n-button>
+      <template v-for="(item, key) in resultRecord" :key="key">
+        <n-popover>
+          <template #trigger>
+            <n-button type="warning" secondary @click="handleViewResult(item.source)">
+              {{ fmtNumber(item.source.amount) }}元:{{ fmtNumber(item.sum) }}元
+            </n-button>
+          </template>
+          <n-button type="error" secondary @click="removeResultItem(key)">删除</n-button>
+        </n-popover>
+      </template>
       <n-button class="ml-auto" type="success" secondary @click="calcSum()">=计算总和</n-button>
     </div>
     <div class="flex-[1] grid grid-cols-4 gap-1">
@@ -132,7 +134,6 @@ const stateInput = useLocalStorage('stateInput', stateInputInit())
 const quickAmount = useLocalStorage('quickAmount', quickAmountInit())
 const numbersOptions = useLocalStorage('numbersOptions', numbersOptsInit())
 const viewResult = ref(<Record<string, number | null>>{})
-
 const resultRecord = useLocalStorage('resultRecord', <ResultRecord>{})
 const inputList = computed(() => {
   switch (pageTab.value) {
@@ -169,6 +170,8 @@ const handleViewResult = (source: ReturnType<typeof stateInputInit>) => {
 }
 
 const resetInput = () => (stateInput.value = stateInputInit())
+
+const removeResultItem = (key: string) => delete resultRecord.value[key]
 
 const resetViewResult = () => (viewResult.value = {})
 
